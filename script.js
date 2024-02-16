@@ -6,103 +6,97 @@ const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
 const CLIENT_ID = '3aa75aaba79d4137b11253ae9b3d8c5c';
 const CLIENT_SECRET = '0e84bc31d3a94d43a6b2db475cadebd3';
 
-const REDIRECT_URI = 'https://slimslim.github.io/SpotifyTempo/';
-// const REDIRECT_URI = 'http://localhost:3000/callback'; // Your redirect URI
+const REDIRECT_URI = 'http://127.0.0.1:5500/index.html';
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
-
-// Function to authorize user
-function authorize() {
-  const scopes = 'user-read-private user-read-email'; // Scopes required
-  const authUrl = `${AUTH_URL}?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}`;
-  window.location.href = authUrl;
-}
+const SCOPES = 'user-read-private user-read-email user-modify-playback-state user-read-playback-position user-library-read';
 
 
-// Function to fetch access token
-async function fetchAccessToken() {
-    try {
-    const response = await fetch(TOKEN_ENDPOINT, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Basic ' + btoa(CLIENT_ID + ':' + CLIENT_SECRET)
-        },
-        body: 'grant_type=client_credentials'
-    });
-    
-    if (!response.ok) {
-        throw new Error('Failed to fetch access token');
-    }
-    
-    const data = await response.json();
-    return data.access_token;
-    } catch (error) {
-    console.error('Error:', error);
+// Check URL to see if it has Token
+function onPageLoad(){
+    // const CLIENT_ID = '3aa75aaba79d4137b11253ae9b3d8c5c';
+    // const CLIENT_SECRET = '0e84bc31d3a94d43a6b2db475cadebd3';
+    console.log("page loaded");
+    if(window.location.search.length>0){
+        handleRedirect();
     }
 }
 
-// Function to make authenticated API requests
-async function fetchSpotifyApi(url, accessToken) {
-    try {
-        const response = await fetch(url, {
-            headers: {
-            'Authorization': `Bearer ${accessToken}`
-            }
-        });
-        if (!response.ok) {
-            throw new Error('Failed to fetch data from Spotify API');
+// function that handles the page redirect to extract code and request TOKEN
+function handleRedirect(){
+    console.log("handeling page redirect")
+    let code = getCode();
+    fetchAccessToken(code);
+    window.history.pushState("", "", REDIRECT_URI); // remove param from url
+}
+
+function fetchAccessToken(code){
+    let body = "grant_type=authorization_code";
+    body += "&code=" + code;
+    body += "&redirect_uri=" + REDIRECT_URI;
+    body += "?client_id=" + CLIENT_ID;
+    body += "?client_secret=" + CLIENT_SECRET;
+    callAuthorizationApi(body);
+}
+
+function callAuthorizationApi(body){
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", TOKEN_ENDPOINT, true);
+    xhr.setRequestHeader('content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('Authorization', 'Basic', + btoa(CLIENT_ID + ":" + CLIENT_SECRET));
+    xhr.send(body);
+    console.log(`XHR done: ${xhr}`);
+    xhr.onload = handleAuthorizationResponse();
+}
+
+function handleAuthorizationResponse(){
+    console.log("authorization....");
+    if ( this.status == 200 ){
+        var data = JSON.parse(this.responseText);
+        console.log(data);
+        var data = JSON.parse(this.responseText);
+        if ( data.access_token != undefined ){
+            access_token = data.access_token;
+            console.log(`Acces TOKEN: ${access_token}`);
+            localStorage.setItem("access_token", access_token);
         }
-    
-        return await response.json();
-    } catch (error) {
-    console.error('Error:', error);
-    }
-}
-
-// // Example usage: Fetch a list of featured playlists
-// async function fetchFeaturedPlaylists() {
-//     const accessToken = await fetchAccessToken();
-//     const url = `${SPOTIFY_API_URL}/browse/featured-playlists`;
-//     const featuredPlaylists = await fetchSpotifyApi(url, accessToken);
-//     console.log('Featured Playlists:', featuredPlaylists);
-// }
-
-// // Call this function to fetch featured playlists
-// fetchFeaturedPlaylists();
-
-// Example usage:
-async function fetchData() {
-    const accessToken = await fetchAccessToken();
-    if (accessToken) {
-        try {
-            const response = await fetch(`${SPOTIFY_API_URL}/albums/4aawyAB9vmqN3uQ7FjRGTy`, {headers: {
-            'Authorization': `Bearer ${accessToken}`}
-        });
-        
-        // const response = await fetch(`${SPOTIFY_API_URL}/me/top/tracks?time_range=long_term&limit=5`, {
-        //     headers: {
-        //         'Authorization': `Bearer ${accessToken}`
-        //     }
-        // });
-        
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch top tracks');
-            }
-
-            const data = await response.json();
-            console.log('Top tracks:', data);
-        } catch (error) {
-            console.error('Error:', error);
+        if ( data.refresh_token  != undefined ){
+            refresh_token = data.refresh_token;
+            console.log(`Refresh TOKEN: ${refresh_token}`);
+            localStorage.setItem("refresh_token", refresh_token);
         }
-    } else {
-        console.error('Access token not available');
+        console.log("Authorization done!!")
+        onPageLoad();
+    }
+    else {
+        console.log(this.responseText);
+        alert(this.responseText);
     }
 }
 
-// Call this function to initiate the authorization process
-authorize();
+
+// Function to get code to request Token (WORKING)
+function getCode(){
+    let code = null;
+    const queryString = window.location.search;
+    if(queryString.length >0 ){
+        const urlParams = new URLSearchParams(queryString);
+        console.log(`cleaned String: ${urlParams}`);
+        code = urlParams.get('code');
+    }
+    return code;
+}
 
 
-// Call the fetchData function
-fetchData();
+// Function to connect to Spotify to get code (WORKING)
+function requestAuthorization(){
+    let url = AUTH_URL;
+    url += "?client_id=" + CLIENT_ID;
+    url += "&response_type=code";
+    url += "&redirect_uri=" + REDIRECT_URI;
+    url += "&show_dialog=true";
+    url += "&scope=" + SCOPES;
+    window.location.href = url;
+}
+
+
+
