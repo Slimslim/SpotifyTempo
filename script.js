@@ -6,7 +6,8 @@ const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
 const CLIENT_ID = '3aa75aaba79d4137b11253ae9b3d8c5c';
 const CLIENT_SECRET = '0e84bc31d3a94d43a6b2db475cadebd3';
 
-const REDIRECT_URI = 'http://localhost:3000/callback'; // Your redirect URI
+const REDIRECT_URI = 'https://slimslim.github.io/SpotifyTempo/';
+// const REDIRECT_URI = 'http://localhost:3000/callback'; // Your redirect URI
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 
 // Function to authorize user
