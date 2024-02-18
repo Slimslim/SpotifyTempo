@@ -3,8 +3,8 @@ const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
 
 // Your Spotify API credentials
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
+// const CLIENT_ID = process.env.CLIENT_ID;
+// const CLIENT_SECRET = process.env.CLIENT_SECRET;
 
 const REDIRECT_URI = 'http://127.0.0.1:5500/index.html';
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
