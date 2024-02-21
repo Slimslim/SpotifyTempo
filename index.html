@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Comic+Neue">
     <title>Document</title>
 </head>
 <body onload="onPageLoad()">
     <header>
-        <h1> Shopify API Test </h1>
-        <button onclick="requestAuthorization()">connect to Spotify</button>
+        <h1> Spotify API Test </h1>
+            
+        <button onclick="requestAuthorization()">
+            <img class="SpotifyIcon" src="./spotify-icons-logos/icons/01_RGB/02_PNG/Spotify_Icon_RGB_Black.png" alt="">
+            <p>connect to Spotify</p>
+        </button>
     </header>
     
-    <div>
-        <p>provide an artist name, and a genre</p>
+    <div class="Filter-container">
+        <p>Provide up to 5 artits name to curate a playlist</p>
 
         <div class="artist_name">
             <div>
@@ -22,9 +28,10 @@
             <input onclick="addArtistField()" id="addBtn" type="button" value=" + " />
         </div>
         
-        <Div class="genre_selection">
+        <p>Provide up to 5 genre:</p>
+        <Div class="genre">
             <Div class="genre_selectors">
-                <select name="music_genre" id="music_genre">
+                <!-- <select name="music_genre" id="music_genre">
                     <option value="French">French</option>
                     <option value="hip-hop">hip-hop</option>
                     <option value="house">house</option>
@@ -32,26 +39,46 @@
                     <option value="pop">pop</option>
                     <option value="rock">rock</option>
                     <option value="work-out">work-out</option>
-                </select>
+                </select> -->
             </Div>
             
             <input onclick="addGenreSelector()" id="addBtn" type="button" value=" + " />
         </Div>
-
+        <p>BPM range of the playlist:</p>
         <Div class="tempo_selection">
             <select name="tempos" id="tempos">
-                <option value="120_135">120-135bpm</option>
-                <option value="135_150">135-150bpm</option>
-                <option value="150_165">150-165bpm</option>
+                <option value="135">120-135bpm</option>
+                <option value="150">135-150bpm</option>
+                <option value="165">150-165bpm</option>
+                <option value="180">165-180bpm</option>
+                <option value="195">180-195bpm</option>
             </select>
-        </Div>      
+        </Div>  
+        
+        <button onclick="getRecommendationTracks()">Search</button>
+
     </div>
 
+    <table>
+        <thead>
+            <tr>
+                <th>picture art</th>
+                <th>track name</th>
+                <th>artist</th>
+                <th>preview track</th>
+                <th>Tempo [bpm]</th>
+                <th>Energy</th>
+            </tr>
+        </thead>
+        <tbody id="recommended_playlist">
+
+        </tbody>
+    </table>
 
     
-    <button onclick="searchArtist()">Search</button>
-    <div id="searchResults"></div>
+    
 
     <script src="script.js"></script>
+    <script src="data.js"></script>
 </body>
 </html>

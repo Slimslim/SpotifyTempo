@@ -1,10 +1,10 @@
+
 // Spotify API endpoint URLs
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
 
 // Your Spotify API credentials
-// const CLIENT_ID = process.env.CLIENT_ID;
-// const CLIENT_SECRET = process.env.CLIENT_SECRET;
+
 
 const REDIRECT_URI = 'http://127.0.0.1:5500/index.html';
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
@@ -12,7 +12,9 @@ const SCOPES = 'user-read-private user-read-email user-modify-playback-state use
 
 // Constante for max filters
 const MAXFILTERS = 5;
-let genre_numbers = 1;
+let genre_numbers = 0;
+
+
 
 // Check URL to see if it has Token
 function onPageLoad(){
@@ -93,29 +95,44 @@ function requestAuthorization() {
 }
 
 
-///// Function that send requests to API //////
+///// Gets value entered in the textfield, Just used to visualize in the console//////
 function artistName(element){
-    console.log(element.value)
+    // console.log(element.value)
 }
 
 // Function that takes the artist name, music genre, and tempo. It will then extract the best songs top songs of the artist in the requested tempo
 // and ask for recommendations for 30 tracks in the genre and tempo using the tracks as a seed.
-async function searchArtist() {
-    console.log("SearchArtist Function started")
+async function getRecommendationTracks() {
     var query = document.querySelector("#artist_name_to_search").value;
     var access_token = localStorage.getItem("access_token");
-    console.log("Artist name: " + query);
-    console.log("Access Token: " + access_token);
     
     /// Hard coded these data
-    let music_genre = "French rap";
-    let min_tempo = 150;
-    let max_tempo = 180;
+    let nbOfTracks = 20;
     ///End of hard code
+    
 
+    // let music_genre = "";
+    let min_tempo = getRequestedTempo()-15;
+    let max_tempo = getRequestedTempo();
     let artist_id = await getArtistid(query, access_token);
     let artist_tracks = await getArtistTopTracks(artist_id, access_token);
     let top_tracks = getBestSongForTempo(artist_tracks, min_tempo , max_tempo);
+    let genreSelected = document.querySelectorAll(".GenreSelector");
+    let music_genre = "";
+
+    // Create Genre String
+    if(genreSelected.length>1){
+        for(i=0; i<genreSelected.length; i++){
+            if(genreSelected.length>1){
+                music_genre += ",";
+            }
+            music_genre += genreSelected[i].value;
+        }
+    }else if (genreSelected.length == 1){
+        music_genre += genreSelected[0].value;
+    }
+
+    // Get track id for seed
     let track_seed =""
     if(top_tracks.length>1){
         track_seed = top_tracks[0].id;
@@ -129,12 +146,27 @@ async function searchArtist() {
         track_seed = top_tracks[0].id;
     }
 
-    console.log(`artist id= ${artist_id} | seed_genres= ${music_genre} | seed_tracks=${track_seed}`);
 
+
+    // console.log(`artist id= ${artist_id} | seed_genres= ${music_genre} | seed_tracks=${track_seed}`);
+
+    let request = SPOTIFY_API_URL + "/recommendations?";
+    request += "limit=" + nbOfTracks;
+    request += "&market=US&seed_artists=" + artist_id;
+
+    if(music_genre != ""){
+        request += "&seed_genres=" + music_genre;
+    }
+
+    request += "&seed_tracks=" + track_seed;
+    request += "&target_danceability=" + "1";
+    request += "&min_tempo=" + min_tempo;
+    request += "&max_tempo=" + max_tempo;
+    console.log("Request sent: " + request);
 
     // Get recommendation from Spotify
     try {
-        const response = await fetch(`${SPOTIFY_API_URL}/recommendations?limit=30&market=US&seed_artists=${artist_id}&seed_genres=${music_genre}&seed_tracks=${track_seed}&min_tempo=${min_tempo}&max_tempo=${max_tempo}`, {
+        const response = await fetch(request, {
             headers: {
                 Authorization: `Bearer ${access_token}`,
             },
@@ -142,8 +174,23 @@ async function searchArtist() {
         
         if (response.ok) {
             const data = await response.json();
-            // Extra
-            console.log("track recommendation: ",data.tracks);
+            
+            track_info = [];
+            for(i=0; i < data.tracks.length; i++){
+                let trackDataInfo = await getTrackAudioFeature(data.tracks[i].id, access_token);
+                let track_data = {
+                    "name": data.tracks[i].name,
+                    "id": data.tracks[i].id,
+                    "popularity": data.tracks[i].popularity,
+                    "energy": trackDataInfo.energy ,
+                    "tempo": trackDataInfo.tempo,
+                }
+                track_info.push(track_data);
+            }
+
+            // console.log(track_info);
+            // console.log(data.tracks);
+            createPlaylistTableHTML(data.tracks, track_info);
             return data.tracks;
         } else {
             console.error('Failed to search for artist:', response.status, response.statusText);
@@ -155,93 +202,9 @@ async function searchArtist() {
     }
 }
 
-
-async function searchForArtist() {
-    try {
-        var access_token = localStorage.getItem("access_token");
-        console.log('Access Token:', access_token); // Print access token
-        const query = 'Fred Again';
-        const apiUrl = `${SPOTIFY_API_URL}/search?q=${encodeURIComponent(query)}&type=artist`;
-        console.log('API URL:', apiUrl); // Print API request URL
-        const artists = await searchArtist(query, access_token);
-        console.log('Artists:', artists);
-    } catch (error) {
-        console.error('Error searching for artist:', error);
-    }
-}
-
-//// Function that will get recommendations for songs for a specific genre, tempo, size
-// Can only do recommendations based on an artist or a track
-// 1. Need to pick an artist, genre and a track (Max 5 of each seperated by commas)
-// 2. Use the selection and ask for recommendations with specific range of tempo
-// 3. Could eventually filter by "type" (Workout, chill, french,...)
-
-
-
-
-
-
-async function recommendedSongs(){
-    // try {
-    //     const response = await fetch(`${SPOTIFY_API_URL}/search?q=${query}&type=artist&market=US`, {
-    //         headers: {
-    //             Authorization: `Bearer ${access_token}`,
-    //         },
-    //     });
-        
-    //     if (response.ok) {
-    //         const data = await response.json();
-    //         // Extract and return the artists from the response
-    //         console.log("Response from searchArtist: ",data.artists.items[0]);
-    //         return data.artists.items;
-    //     } else {
-    //         console.error('Failed to search for artist:', response.status, response.statusText);
-    //         return null;
-    //     }
-    // } catch (error) {
-    //     console.error('Error searching for artist:', error);
-    //     return null;
-    // }
-}
-
-// Function that will add additional selector for music genre selection. Maximum 5
-function addGenreSelector(){
-    if(genre_numbers < MAXFILTERS){
-        
-        let selectDiv = document.querySelector(".genre_selectors");
-        let selector =  document.createElement("select");
-        selector.setAttribute("id","music_genre" + genre_numbers);
-        selector.setAttribute("name","music_genre");
-        let option = document.createElement("option");
-        option.text = option.value = "French";
-        let option1 = document.createElement("option");
-        option1.text = option1.value = "hip-hop";
-        let option2 = document.createElement("option");
-        option2.text = option2.value = "house";
-        let option3 = document.createElement("option");
-        option3.text = option3.value = "indie-pop";
-        let option4 = document.createElement("option");
-        option4.text = option4.value = "pop";
-        let option5 = document.createElement("option");
-        option5.text = option5.value = "rock";
-        let option6 = document.createElement("option");
-        option6.text = option6.value = "work-out";
-    
-        selector.appendChild(option);
-        selector.appendChild(option1);
-        selector.appendChild(option2);
-        selector.appendChild(option3);
-        selector.appendChild(option4);
-        selector.appendChild(option5);
-        selector.appendChild(option6);
-        selectDiv.appendChild(selector);
-        genre_numbers ++;
-    }
-}
-
-// function that takes the artist name and returns the artist id that is the colosest from the name given
+// function that takes the artist name and returns the artist id that is the closest from the name given
 async function getArtistid(query, access_token){
-    console.log("SearchArtistid Function started")
+    // console.log("SearchArtistid Function started")
     // console.log("Artist name: " + query);
     // console.log("Access Token: " + access_token);
 
@@ -267,7 +230,7 @@ async function getArtistid(query, access_token){
 
 // Function that will take an artist ID number and return an array of the best tracks with name, id of the track and it's tempo. 
 async function getArtistTopTracks(artistID, access_token){
-    console.log("SearchArtistTopTracks Function started")
+    // console.log("SearchArtistTopTracks Function started")
     // console.log("Artist ID: " + artistID);
     // console.log("Access Token: " + access_token);
     try {
@@ -282,16 +245,18 @@ async function getArtistTopTracks(artistID, access_token){
             // console.log("Best track results: ",data.tracks);
             track_info = [];
             for(i=0; i < data.tracks.length; i++){
-                track_data = {
+                let trackDataInfo = await getTrackAudioFeature(data.tracks[i].id, access_token);
+                let track_data = {
                     "name": data.tracks[i].name,
                     "id": data.tracks[i].id,
                     "popularity": data.tracks[i].popularity,
-                    "tempo": await getTrackTempo(data.tracks[i].id, access_token),
-                } 
+                    "energy": trackDataInfo.energy ,
+                    "tempo": trackDataInfo.tempo,
+                }
                 track_info.push(track_data);
             }
-            console.log("Tempo information from top tracks:")
-            console.log(track_info);
+            // console.log("Top tracks with Tempo: ")
+            // console.log(track_info);
             // getBestSongForTempo(track_info, 130 , 160);
             return track_info;
         } else {
@@ -306,7 +271,7 @@ async function getArtistTopTracks(artistID, access_token){
 
 // Function that gets a track id and returns the tempo value
 async function getTrackTempo(trackID, access_token){
-    console.log("getTrackTempo Function started")
+    // console.log("getTrackTempo Function started")
     // console.log("Track ID: " + trackID);
     // console.log("Access Token: " + access_token);
 
@@ -319,8 +284,61 @@ async function getTrackTempo(trackID, access_token){
         
         if (response.ok) {
             const data = await response.json();
-            // console.log("Track Tempo ",data.tempo);
+            // console.log("Track info ",data);
             return data.tempo;
+        } else {
+            console.error('Failed to search for artist:', response.status, response.statusText);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error searching for artist:', error);
+        return null;
+    }
+}
+
+// Function that gets a track id and returns the energy value
+async function getTrackEnergy(trackID, access_token){
+    // console.log("getTrackTempo Function started")
+    // console.log("Track ID: " + trackID);
+    // console.log("Access Token: " + access_token);
+
+    try {
+        const response = await fetch(`${SPOTIFY_API_URL}/audio-features/${trackID}`, {
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+            },
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data.energy;
+        } else {
+            console.error('Failed to search for artist:', response.status, response.statusText);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error searching for artist:', error);
+        return null;
+    }
+}
+
+
+// Function that gets a track id and returns the energy value and tempo
+async function getTrackAudioFeature(trackID, access_token){
+    // console.log("getTrackTempo Function started")
+    // console.log("Track ID: " + trackID);
+    // console.log("Access Token: " + access_token);
+
+    try {
+        const response = await fetch(`${SPOTIFY_API_URL}/audio-features/${trackID}`, {
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+            },
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data;
         } else {
             console.error('Failed to search for artist:', response.status, response.statusText);
             return null;
@@ -339,7 +357,96 @@ function getBestSongForTempo(track_list, min_tempo , max_tempo){
         return track.tempo >= min_tempo && track.tempo <= max_tempo;
     });
 
-    console.log (tracks_in_tempo);
+    // console.log("Tracks in the right tempo");
+    // console.log (tracks_in_tempo);
     return tracks_in_tempo;
     
+}
+
+
+//// Function that will get recommendations for songs for a specific genre, tempo, size
+// Can only do recommendations based on an artist or a track
+// 1. Need to pick an artist, genre and a track (Max 5 of each seperated by commas)
+// 2. Use the selection and ask for recommendations with specific range of tempo
+// 3. Could eventually filter by "type" (Workout, chill, french,...)
+
+
+
+
+// function that returns the selected Tempo
+function getRequestedTempo(){
+    let selectedTempo = document.querySelector("#tempos").value;
+    return selectedTempo;
+}
+
+
+////////// Function for changing the HTML File
+// Function that will add additional selector for music genre selection. Maximum 5
+function addGenreSelector(){
+    if(genre_numbers < MAXFILTERS){
+        let selectDiv = document.querySelector(".genre_selectors");
+        let selector =  document.createElement("select");
+        selector.setAttribute("id","music_genre" + genre_numbers);
+        selector.setAttribute("name","music_genre");
+        selector.setAttribute("class", "GenreSelector");
+
+        for(i=0; i<availableGenres.length; i++){
+            let option = document.createElement("option");
+            option.text = option.value = availableGenres[i];
+            selector.appendChild(option);
+        }
+
+        selectDiv.appendChild(selector);
+        genre_numbers ++;
+    }
+}
+
+async function createPlaylistTableHTML(trackList, extraData){
+    
+    let tableBody = document.querySelector("#recommended_playlist");
+
+    for(i = 0; i<trackList.length; i++){
+
+        // Create a new row element
+        let new_row = document.createElement("tr");
+    
+        // Create image td cell
+        let pictureCell = document.createElement("td");
+        let imageElement = document.createElement("img");
+        imageElement.src = trackList[i].album.images[2].url;
+        pictureCell.appendChild(imageElement);
+        new_row.appendChild(pictureCell);
+    
+        // Create track name td cell
+        let trackNameCell = document.createElement("td");
+        trackNameCell.innerText = trackList[i].name;
+        new_row.appendChild(trackNameCell);
+    
+        // Create artist name td cell
+        let artistNameCell = document.createElement("td");
+        artistNameCell.innerText = trackList[i].artists[0].name;
+        new_row.appendChild(artistNameCell);
+    
+        // Create preview td cell
+        if(trackList[i].preview_url){
+            let previewCell = document.createElement("td");
+            let audioController = document.createElement("audio");
+            audioController.setAttribute("controls", "control");
+            audioController.src = trackList[i].preview_url;
+            previewCell.appendChild(audioController);
+            new_row.appendChild(previewCell);
+        }
+
+        // Create tempo td cell
+        let tempoCell = document.createElement("td");
+        tempoCell.innerText = extraData[i].tempo;
+        new_row.appendChild(tempoCell);
+
+        // Create energy td cell
+        let energyCell = document.createElement("td");
+        energyCell.innerText = extraData[i].energy;
+        new_row.appendChild(energyCell);
+    
+        tableBody.appendChild(new_row);
+    }
 }

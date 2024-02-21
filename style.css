@@ -1,0 +1,64 @@
+/* CSS reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* font-family: 'Comic Neue', sans-serif; */
+}
+
+header{
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    background-color: #191414;
+    color: #FFFFFF;
+    padding: 10px 10%;
+    gap: 20px;
+    border-bottom: #FFFFFF 2px solid;
+}
+
+button{
+    display: flex;
+    align-items: center;
+    background-color: #1DB954;
+    border-radius: 15px;
+    border: none;
+    height: 30px;
+    padding: 6px;
+    gap: 6px;
+    font-weight: bold;
+
+}
+
+.Filter-container{
+    width: 100%;
+    background-color: #191414;
+    color: white;
+    padding: 10px 10%;
+}
+
+.genre, .artist_name, .tempo_selection{
+    display: flex;
+    padding: 10px 0;
+    gap: 10px;
+}
+
+.genre_selectors{
+    display: flex;
+    gap: 10px;
+
+}
+
+table{
+    width: 800px;
+    margin: 0 auto;
+    background-color: #191414;
+    color: white;
+    border-top: 2px white solid;
+    border-radius: 25px;
+    padding: 6px;
+}
+
+.SpotifyIcon{
+    height: 21px;
+}
