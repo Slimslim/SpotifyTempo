@@ -4,7 +4,8 @@ const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
 
 // Your Spotify API credentials
-
+const CLIENT_ID = '3aa75aaba79d4137b11253ae9b3d8c5c';
+const CLIENT_SECRET = '0e84bc31d3a94d43a6b2db475cadebd3';
 
 const REDIRECT_URI = 'http://127.0.0.1:5500/index.html';
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
@@ -115,8 +116,8 @@ async function getRecommendationTracks() {
     let min_tempo = getRequestedTempo()-15;
     let max_tempo = getRequestedTempo();
     let artist_id = await getArtistid(query, access_token);
-    let artist_tracks = await getArtistTopTracks(artist_id, access_token);
-    let top_tracks = getBestSongForTempo(artist_tracks, min_tempo , max_tempo);
+    // let artist_tracks = await getArtistTopTracks(artist_id, access_token);
+    // let top_tracks = getBestSongForTempo(artist_tracks, min_tempo , max_tempo);
     let genreSelected = document.querySelectorAll(".GenreSelector");
     let music_genre = "";
 
@@ -132,19 +133,19 @@ async function getRecommendationTracks() {
         music_genre += genreSelected[0].value;
     }
 
-    // Get track id for seed
-    let track_seed =""
-    if(top_tracks.length>1){
-        track_seed = top_tracks[0].id;
-        for(i=1; i<top_tracks.length; i++){
-            if(top_tracks[i]){
-                let string = "," + top_tracks[i].id;
-                track_seed += string;
-            }
-        }
-    }else{
-        track_seed = top_tracks[0].id;
-    }
+    //// Get track id for seed
+    // let track_seed =""
+    // if(top_tracks.length>1){
+    //     track_seed = top_tracks[0].id;
+    //     for(i=1; i<top_tracks.length; i++){
+    //         if(top_tracks[i]){
+    //             let string = "," + top_tracks[i].id;
+    //             track_seed += string;
+    //         }
+    //     }
+    // }else{
+    //     track_seed = top_tracks[0].id;
+    // }
 
 
 
@@ -152,13 +153,13 @@ async function getRecommendationTracks() {
 
     let request = SPOTIFY_API_URL + "/recommendations?";
     request += "limit=" + nbOfTracks;
-    request += "&market=US&seed_artists=" + artist_id;
+    request += "&market=FR&seed_artists=" + artist_id;
 
     if(music_genre != ""){
         request += "&seed_genres=" + music_genre;
     }
 
-    request += "&seed_tracks=" + track_seed;
+    // request += "&seed_tracks=" + track_seed;
     request += "&target_danceability=" + "1";
     request += "&min_tempo=" + min_tempo;
     request += "&max_tempo=" + max_tempo;
@@ -173,6 +174,7 @@ async function getRecommendationTracks() {
         });
         
         if (response.ok) {
+            console.log("recommendation received");
             const data = await response.json();
             
             track_info = [];
@@ -193,11 +195,11 @@ async function getRecommendationTracks() {
             createPlaylistTableHTML(data.tracks, track_info);
             return data.tracks;
         } else {
-            console.error('Failed to search for artist:', response.status, response.statusText);
+            console.error('Failed to search for recommendations:', response.status, response.statusText);
             return null;
         }
     } catch (error) {
-        console.error('Error searching for artist:', error);
+        console.error('Error searching for recommendations:', error);
         return null;
     }
 }
@@ -379,7 +381,6 @@ function getRequestedTempo(){
     return selectedTempo;
 }
 
-
 ////////// Function for changing the HTML File
 // Function that will add additional selector for music genre selection. Maximum 5
 function addGenreSelector(){
@@ -400,6 +401,9 @@ function addGenreSelector(){
         genre_numbers ++;
     }
 }
+
+//// Add a box to "tick" to select track you want to add to a playlist
+//// Then add a button to create a playlist
 
 async function createPlaylistTableHTML(trackList, extraData){
     
